@@ -792,8 +792,8 @@ int QCamera3HardwareInterface::openCamera()
     }
 
     // Setprop to decide the time source (whether boottime or monotonic).
-    // By default, use monotonic time.
-    property_get("persist.camera.time.monotonic", value, "1");
+    // By default, use boottime time.
+    property_get("persist.camera.time.monotonic", value, "0");
     mBootToMonoTimestampOffset = 0;
     if (atoi(value) == 1) {
         // if monotonic is set, then need to use time in monotonic.
