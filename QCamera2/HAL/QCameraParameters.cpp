@@ -1960,7 +1960,7 @@ int32_t QCameraParameters::setPreviewFormat(const QCameraParameters& params)
             char prop[PROPERTY_VALUE_MAX];
             int pFormat;
             memset(prop, 0, sizeof(prop));
-            property_get("persist.camera.preview.ubwc", prop, "1");
+            property_get("persist.camera.preview.ubwc", prop, "0");
 
             pFormat = atoi(prop);
             if (pFormat == 1) {
@@ -10195,7 +10195,7 @@ int32_t QCameraParameters::getStreamFormat(cam_stream_type_t streamType,
             char prop[PROPERTY_VALUE_MAX];
             int pFormat;
             memset(prop, 0, sizeof(prop));
-            property_get("persist.camera.video.ubwc", prop, "1");
+            property_get("persist.camera.video.ubwc", prop, "0");
             pFormat = atoi(prop);
             if (pFormat == 1) {
                 format = CAM_FORMAT_YUV_420_NV12_UBWC;
