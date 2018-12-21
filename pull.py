@@ -1,6 +1,6 @@
 #!/bin/python
 #pull from vendor repo
-#assumes that script is located in los15/hardware/qcom/camera-op3/util/pull
+#assumes that script is located in los15/hardware/qcom/camera-op3/
 
 from shutil import copy2
 import os
