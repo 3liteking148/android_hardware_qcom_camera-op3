@@ -1,7 +1,7 @@
 id=op3cam
-name=Template Module
+name=Custom Camera HAL for OP3/3T
 version=v1
 versionCode=1
 author=3liteking148
-description=A short description
+description=Camera HAL using 7.x libs
 minMagisk=17000
