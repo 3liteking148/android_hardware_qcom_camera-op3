@@ -5,3 +5,10 @@ MODDIR=${0%/*}
 
 # This script will be executed in late_start service mode
 # More info in the main Magisk thread
+
+#selinux permissive and restart camera
+setenforce 0
+stop qcamerasvr
+stop camera-provider-2-4
+start qcamerasvr
+start camera-provider-2-4
