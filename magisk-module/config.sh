@@ -85,8 +85,8 @@ set_permissions() {
 
   # The following is default permissions, DO NOT remove
   set_perm_recursive  $MODPATH  0  0  0755  0644
-  set_perm  $MODPATH/system/vendor/bin/mm-qcamera-daemon  0  0  0755
-  set_perm  $MODPATH/system/vendor/bin/hw/android.hardware.camera.provider@2.4-service.oneplus3  0  0  0755
+  set_perm  $MODPATH/system/vendor/bin/mm-qcamera-daemon  0  0  0755 u:object_r:mm-qcamerad_exec:s0
+  set_perm  $MODPATH/system/vendor/bin/hw/android.hardware.camera.provider@2.4-service.oneplus3  0  0  0755 u:object_r:hal_camera_default_exec:s0
 }
 
 ##########################################################################################
