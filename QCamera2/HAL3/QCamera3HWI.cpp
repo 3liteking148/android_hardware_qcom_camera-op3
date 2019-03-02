@@ -114,6 +114,9 @@ extern pthread_mutex_t gCamLock;
 volatile uint32_t gCamHal3LogLevel = 1;
 extern uint8_t gNumCameraSessions;
 
+int32_t sensorSensitivity = 0;
+bool isManualMode = false;
+
 const QCamera3HardwareInterface::QCameraPropMap QCamera3HardwareInterface::CDS_MAP [] = {
     {"On",  CAM_CDS_MODE_ON},
     {"Off", CAM_CDS_MODE_OFF},
@@ -5122,13 +5125,19 @@ QCamera3HardwareInterface::translateFromHalMetadata(
                 sensorRollingShutterSkew, 1);
     }
 
-    IF_META_AVAILABLE(int32_t, sensorSensitivity, CAM_INTF_META_SENSOR_SENSITIVITY, metadata) {
-        LOGD("sensorSensitivity = %d", *sensorSensitivity);
-        camMetadata.update(ANDROID_SENSOR_SENSITIVITY, sensorSensitivity, 1);
+    IF_META_AVAILABLE(cam_3a_params_t, ae_params, CAM_INTF_META_AEC_INFO, metadata) {
+        if(!isManualMode) sensorSensitivity = ae_params->iso_value;
+    }
+
+    //sometimes backend not returning iso value so use old frame in such case
+    if(sensorSensitivity != 0) {
+        camMetadata.update(ANDROID_SENSOR_SENSITIVITY, &sensorSensitivity, 1);
+
+        LOGD("sensorSensitivity = %d", sensorSensitivity);
 
         //calculate the noise profile based on sensitivity
-        double noise_profile_S = computeNoiseModelEntryS(*sensorSensitivity);
-        double noise_profile_O = computeNoiseModelEntryO(*sensorSensitivity);
+        double noise_profile_S = computeNoiseModelEntryS(sensorSensitivity);
+        double noise_profile_O = computeNoiseModelEntryO(sensorSensitivity);
         double noise_profile[2 * gCamCapability[mCameraId]->num_color_channels];
         for (int i = 0; i < 2 * gCamCapability[mCameraId]->num_color_channels; i += 2) {
             noise_profile[i]   = noise_profile_S;
@@ -9017,6 +9026,7 @@ int32_t QCamera3HardwareInterface::setHalFpsRange(const CameraMetadata &settings
  * RETURN     : success: NO_ERROR
  *              failure:
  *==========================================================================*/
+float ispSensitivityFactor = 1.0;
 int QCamera3HardwareInterface::translateToHalMetadata
                                   (const camera3_capture_request_t *request,
                                    metadata_buffer_t *hal_metadata,
@@ -9054,8 +9064,10 @@ int QCamera3HardwareInterface::translateToHalMetadata
 
         if (fwk_aeMode == ANDROID_CONTROL_AE_MODE_OFF ) {
             aeMode = CAM_AE_MODE_OFF;
+            isManualMode = true;
         } else {
             aeMode = CAM_AE_MODE_ON;
+            isManualMode = false;
         }
         if (fwk_aeMode == ANDROID_CONTROL_AE_MODE_ON_AUTO_FLASH_REDEYE) {
             redeye = 1;
@@ -9468,7 +9480,15 @@ int QCamera3HardwareInterface::translateToHalMetadata
     }
 
     if (frame_settings.exists(ANDROID_SENSOR_SENSITIVITY)) {
-        int32_t sensorSensitivity = frame_settings.find(ANDROID_SENSOR_SENSITIVITY).data.i32[0];
+        sensorSensitivity = frame_settings.find(ANDROID_SENSOR_SENSITIVITY).data.i32[0];
+        if(gCamCapability[mCameraId]->position == CAM_POSITION_BACK && sensorSensitivity > 799){
+            ispSensitivityFactor = (float)sensorSensitivity / 799.0;
+        } else if(gCamCapability[mCameraId]->position == CAM_POSITION_FRONT && sensorSensitivity > 800){
+            ispSensitivityFactor = (float)sensorSensitivity / 800.0;
+        } else {
+            ispSensitivityFactor = 1.0;
+        }
+        
         if (sensorSensitivity < gCamCapability[mCameraId]->sensitivity_range.min_sensitivity)
                 sensorSensitivity = gCamCapability[mCameraId]->sensitivity_range.min_sensitivity;
         if (sensorSensitivity > gCamCapability[mCameraId]->sensitivity_range.max_sensitivity)
@@ -9478,12 +9498,33 @@ int QCamera3HardwareInterface::translateToHalMetadata
                 sensorSensitivity)) {
             rc = BAD_VALUE;
         }
+    } else {
+        //reset if manual sensitivity turned off
+        ispSensitivityFactor = 1.0;
     }
 
 #ifndef USE_HAL_3_3
     if (frame_settings.exists(ANDROID_CONTROL_POST_RAW_SENSITIVITY_BOOST)) {
-        int32_t ispSensitivity =
-            frame_settings.find(ANDROID_CONTROL_POST_RAW_SENSITIVITY_BOOST).data.i32[0];
+        int32_t ispSensitivity = (int32_t)(
+            (float)(frame_settings.find(ANDROID_CONTROL_POST_RAW_SENSITIVITY_BOOST).data.i32[0]) * ispSensitivityFactor);
+        if (ispSensitivity <
+            gCamCapability[mCameraId]->isp_sensitivity_range.min_sensitivity) {
+                ispSensitivity =
+                    gCamCapability[mCameraId]->isp_sensitivity_range.min_sensitivity;
+                LOGD("clamp ispSensitivity to %d", ispSensitivity);
+        }
+        if (ispSensitivity >
+            gCamCapability[mCameraId]->isp_sensitivity_range.max_sensitivity) {
+                ispSensitivity =
+                    gCamCapability[mCameraId]->isp_sensitivity_range.max_sensitivity;
+                LOGD("clamp ispSensitivity to %d", ispSensitivity);
+        }
+        if (ADD_SET_PARAM_ENTRY_TO_BATCH(hal_metadata, CAM_INTF_META_ISP_SENSITIVITY,
+                ispSensitivity)) {
+            rc = BAD_VALUE;
+        }
+    } else if (ispSensitivityFactor != 1.0) {
+        int32_t ispSensitivity = (int32_t)(100.0f * ispSensitivityFactor);
         if (ispSensitivity <
             gCamCapability[mCameraId]->isp_sensitivity_range.min_sensitivity) {
                 ispSensitivity =

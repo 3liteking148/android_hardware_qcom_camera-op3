@@ -2655,8 +2655,16 @@ QCamera3Exif *QCamera3PostProcessor::getExifData(metadata_buffer_t *metadata,
             }
         }
 
-        IF_META_AVAILABLE(int32_t, isoSpeed, CAM_INTF_META_SENSOR_SENSITIVITY, metadata) {
-            int16_t fwk_isoSpeed = (int16_t) *isoSpeed;
+        if(!isManualMode){
+            IF_META_AVAILABLE(cam_3a_params_t, ae_params, CAM_INTF_META_AEC_INFO, metadata) {
+                int16_t fwk_isoSpeed = (int16_t) ae_params->iso_value;
+                exif->addEntry(EXIFTAGID_ISO_SPEED_RATING, EXIF_SHORT, 1, (void *) &(fwk_isoSpeed));
+            } else {
+                int16_t fwk_isoSpeed = (int16_t) sensorSensitivity;
+                exif->addEntry(EXIFTAGID_ISO_SPEED_RATING, EXIF_SHORT, 1, (void *) &(fwk_isoSpeed));
+            }
+        } else {
+            int16_t fwk_isoSpeed = (int16_t) sensorSensitivity;
             exif->addEntry(EXIFTAGID_ISO_SPEED_RATING, EXIF_SHORT, 1, (void *) &(fwk_isoSpeed));
         }
 

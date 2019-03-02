@@ -78,6 +78,9 @@ typedef enum {
 
 extern volatile uint32_t gCamHal3LogLevel;
 
+extern int32_t sensorSensitivity;
+extern bool isManualMode;
+
 class QCamera3MetadataChannel;
 class QCamera3PicChannel;
 class QCamera3HeapMemory;
