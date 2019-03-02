@@ -89,8 +89,8 @@ set_permissions() {
   set_perm  $MODPATH/system/vendor/bin/hw/android.hardware.camera.provider@2.4-service.oneplus3  0  0  0755 u:object_r:hal_camera_default_exec:s0
 
   # Create symlink for ROMs based on LOS 16 device tree
-  ln -s /system/lib/vendor.qti.hardware.camera.device@1.0.so /system/vendor/lib/vendor.qti.hardware.camera.device@1.0_vendor.so
-  ln -s /system/lib64/vendor.qti.hardware.camera.device@1.0.so /system/vendor/lib64/vendor.qti.hardware.camera.device@1.0_vendor.so
+  ln -s /system/lib/vendor.qti.hardware.camera.device@1.0.so $MODPATH/system/vendor/lib/vendor.qti.hardware.camera.device@1.0_vendor.so
+  ln -s /system/lib64/vendor.qti.hardware.camera.device@1.0.so $MODPATH/system/vendor/lib64/vendor.qti.hardware.camera.device@1.0_vendor.so
 }
 
 ##########################################################################################
